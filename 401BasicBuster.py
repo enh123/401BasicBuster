@@ -61,7 +61,7 @@ class _401Basic_Buster:
                                                  proxies=self.proxy, verify=False, timeout=20)
                         if self.proxy and self.local_data.response_failure_count >= 2:
                             time.sleep(5)  # 服务器限制爆破速率为每5秒1次
-                        elif self.proxy is None and self.local_data.response_failure_count > 10:
+                        elif self.proxy is None and self.local_data.response_failure_count > 10:  #使用burpsuite代理会影响异常的捕捉
                             time.sleep(5)
 
                     except Exception as e:
@@ -71,15 +71,20 @@ class _401Basic_Buster:
                             continue
 
                     if response.status_code in (200, 302) and not re.search(
-                            r"unauthorized|Invalid|Authorization required|Burp Suite", response.text, re.IGNORECASE) and not re.search(
-                            r"Basic", str(response.headers), re.IGNORECASE):
+                            r"unauthorized|Invalid|Authorization required|Burp Suite", response.text,
+                            re.IGNORECASE) and not re.search(
+                        r"Basic", str(response.headers), re.IGNORECASE):
                         with self.threading_lock:
                             print(
                                 Fore.RED + f"爆破成功, url: {url.strip()} 账号: {username.strip()}  密码: {password.strip()}")
                         with self.threading_lock:
                             progress_bar.update(1)
                         return
-                    elif "tomcat" in response.text and response.status_code==403 and re.search(r"Access Denied|you may have triggered the cross-site request forgery (CSRF) protection",response.text,re.IGNORECASE) and not re.search(r"only accessible from|on the same machine as Tomcat",response.text,re.IGNORECASE):  #有时候tomcat爆破成功但是由于爆破次数过多触发了保护机制导致不会返回200状态码而是返回403,但实际上账号密码是正确的
+                    elif "tomcat" in response.text and response.status_code == 403 and re.search(
+                            r"Access Denied|you may have triggered the cross-site request forgery (CSRF) protection",
+                            response.text, re.IGNORECASE) and not re.search(
+                            r"only accessible from|on the same machine as Tomcat", response.text,
+                            re.IGNORECASE):  #有时候tomcat爆破成功但是由于爆破次数过多触发了保护机制导致不会返回200状态码而是返回403,但实际上账号密码是正确的
                         with self.threading_lock:
                             print(
                                 Fore.RED + f"爆破成功请再次验证, url: {url.strip()} 账号: {username.strip()}  密码: {password.strip()}  由于tomcat的爆破保护机制直接登录可能无法成功需要换个ip登录")
@@ -105,7 +110,7 @@ class _401Basic_Buster:
             for thread in thread_list:
                 thread.join()
 
-        with tqdm(total=len(self.urls), desc="进度", unit="url") as progress_bar:
+        with tqdm(total=len(self.urls), desc="进度", bar_format="{l_bar}{bar} [{elapsed}]") as progress_bar:
 
             for i in range(0, len(self.urls), self.threads):
                 thread_list = []
@@ -113,7 +118,7 @@ class _401Basic_Buster:
                     thread = threading.Thread(target=self.brute_force, args=(url, progress_bar))
                     thread_list.append(thread)
                     thread.start()
-                    
+
                 for thread in thread_list:
                     thread.join()
 
