@@ -1,4 +1,6 @@
 # 401BasicBuster
+HTTP Basic Authorization Bruteforce
+
 http basic 认证批量爆破工具
 
 功能：
